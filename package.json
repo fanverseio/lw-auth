@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/fanverseio/lw-auth/issues"
   },
-  "homepage": "https://github.com/fanverseio/lw-auth#readme"
+  "homepage": "https://github.com/fanverseio/lw-auth#readme",
+  "dependencies": {
+    "crypto": "^1.0.1"
+  }
 }
