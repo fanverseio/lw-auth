@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel.js");
+const UserProfile = require("../models/userProfileModel.js");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
@@ -214,6 +215,44 @@ class AuthService {
     } catch (error) {
       console.error("Error logging in:", error);
       throw error;
+    }
+  }
+
+  static async updateProfile(email, profileData) {
+    try {
+      if (!email || !profileData) {
+        throw new Error("Email and profile data are required");
+      }
+
+      const updatedUser = await UserProfile.updateProfile(email, profileData);
+
+      return { message: "Profile updated successfully", user: updatedUser };
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      throw error;
+    }
+  }
+
+  static async getProfile(email) {
+    try {
+      if (!email) {
+        throw new Error("Email is required");
+      }
+
+      console.log(`Looking up profile for email: ${email}`);
+
+      const profile = await UserProfile.getProfile(email);
+
+      console.log(`Profile details: ${JSON.stringify(profile)}`);
+
+      if (!profile) {
+        console.error("Profile not found for email:", email);
+        throw new Error("Profile not found");
+      }
+      return { profile };
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      throw new Error("Profile not found");
     }
   }
 }

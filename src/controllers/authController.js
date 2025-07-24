@@ -110,6 +110,34 @@ const loginUser = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const { name, bio, link } = req.body;
+
+    const result = await AuthService.updateProfile(email, { name, bio, link });
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const getProfile = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    const profile = await AuthService.getProfile(email);
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    res.status(200).json({ profile });
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+};
+
 module.exports = {
   registerUser,
   verifyUser,
@@ -117,4 +145,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   loginUser,
+  updateProfile,
+  getProfile,
 };
