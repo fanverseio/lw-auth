@@ -6,6 +6,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+const authRoutes = require("./src/routes/authRoutes.js");
+
+app.use("/auth", authRoutes);
+
+const session = require("express-session");
+
 app.get("/", (req, res) => {
   res.send("Welcome to the Learnerweave Auth API");
 });

@@ -1,4 +1,4 @@
-const bycrpt = require("bcrypt");
+const bcrypt = require("bcrypt");
 const User = require("../models/userModel.js");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -10,7 +10,6 @@ const {
   sendOTPEmail,
   sendWelcomeEmail,
 } = require("../services/emailService.js");
-const { log } = require("console");
 
 class AuthService {
   static async registerUser(email, password) {
@@ -35,7 +34,7 @@ class AuthService {
       // check if email has been used
       const userExists = await User.findByEmail(email);
       if (userExists) {
-        const userVerified = User.emailVerified(email);
+        const userVerified = await User.emailVerified(email);
         if (userVerified) {
           throw new Error("Email already registered and verified");
         } else {
@@ -45,21 +44,18 @@ class AuthService {
       }
 
       // hash the password
-      const hashedPassword = await bycrpt.hash(password, bcryptSaltRounds);
+      const hashedPassword = await bcrypt.hash(password, bcryptSaltRounds);
 
       // create a new user
-      const newUser = await User.create({
-        email,
-        password: hashedPassword,
-      });
+      const newUser = await User.create(email, hashedPassword);
 
       // Send OTP for email verification
-      const otp = await User.createAndStoreOTP(email);
-      await sendOTPEmail(email, otp);
+      await User.sendOTP(email);
 
       return { message: "User registered successfully", user: newUser };
     } catch (error) {
-      throw new Error("User registration failed");
+      console.error("Error registering user:", error);
+      throw error;
     }
   }
 
@@ -70,19 +66,119 @@ class AuthService {
         throw new Error("Email and OTP are required");
       }
 
-      log(`[AUTH SERVICE] Verifying email: ${email} with OTP: ${otp}`);
+      console.log(`[AUTH SERVICE] Verifying email: ${email} with OTP: ${otp}`);
 
       // check OTP
       const optOnDb = await User.verifyEmail(email, otp);
-    } catch (error) {}
+
+      if (!optOnDb) {
+        throw new Error("Invalid OTP or email");
+      }
+
+      // check if OTP is expired
+      const otpExpired = User.isOTPExpired(optOnDb.created_at);
+      if (otpExpired) {
+        throw new Error("OTP has expired");
+      }
+
+      // update user email_verified status
+      await User.updateEmailVerified(email);
+
+      // delete OTP from DB
+      await User.deleteOTP(email);
+
+      // send welcome email
+      await sendWelcomeEmail(email);
+      console.log(`[AUTH SERVICE] Welcome email sent to: ${email}`);
+    } catch (error) {
+      console.error("Error verifying email:", error);
+      throw new Error("Email verification failed");
+    }
   }
 
-  // update email as verified
-  static async updateEmailVerified(email) {
-    await pool.query(
-      "UPDATE users SET email_verified = true, updated_at = NOW() WHERE email = $1",
-      [email]
-    );
-    console.log(`Email: ${email} has been verified successfully`);
+  // Resend OTP
+
+  static async resendOTP(email) {
+    try {
+      if (!email) {
+        throw new Error("Email is required");
+      }
+
+      const userExists = await User.findByEmail(email);
+      if (!userExists) {
+        throw new Error("User with this email does not exist");
+      }
+
+      const userAlreadyVerified = await User.emailVerified(email);
+      if (userAlreadyVerified) {
+        throw new Error("Email is already verified");
+      }
+
+      const otpDayCount = await User.recentOTPCount(email);
+      if (otpDayCount >= 3) {
+        throw new Error(
+          "You have reached the maximum number of OTP requests for today. Please try again tomorrow."
+        );
+      }
+
+      const otp = await User.createAndStoreOTP(email);
+
+      await sendOTPEmail(email, otp);
+
+      return { message: "OTP resent successfully" };
+    } catch (error) {
+      console.error("Error resending OTP:", error);
+      throw new Error("Resending OTP failed");
+    }
+  }
+
+  //forget password
+  static async forgetPassword(email) {
+    try {
+      if (!email) {
+        throw new Error("Email is required");
+      }
+
+      const userExists = await User.findByEmail(email);
+      if (!userExists) {
+        throw new Error("User with this email does not exist");
+      }
+
+      const token = await User.passwordResetToken(email);
+
+      return { message: "OTP sent to email for verification" };
+    } catch (error) {
+      console.error("Error sending OTP for password reset:", error);
+      throw new Error("Sending OTP for password reset failed");
+    }
+  }
+
+  // Password reset
+  static async resetPassword(email, token, newPassword) {
+    try {
+      if (!email || !token || !newPassword) {
+        throw new Error("Email, token, and new password are required");
+      }
+
+      const validateToken = await User.validatePasswordResetToken(email, token);
+      if (!validateToken) {
+        throw new Error("Invalid or expired password reset token");
+      }
+
+      // check password strength
+      if (!emailValidation.isValidPasswordStrength(newPassword)) {
+        throw new Error(
+          "Password must contain at least one uppercase letter, one number, and be at least 8 characters long"
+        );
+      }
+
+      await User.updatePassword(email, newPassword);
+      await User.deletePasswordResetToken(email);
+
+      return { message: "Password reset successfully" };
+    } catch (error) {
+      console.log("Error resetting password:", error);
+      throw new Error("Password reset failed");
+    }
   }
 }

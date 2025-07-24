@@ -24,7 +24,8 @@ function isValidPasswordStrength(password) {
   }
   const hasUppercase = /[A-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
-  return hasUppercase && hasNumber;
+  const isLongEnough = password.length >= 8;
+  return hasUppercase && hasNumber && isLongEnough;
 }
 
 module.exports = {

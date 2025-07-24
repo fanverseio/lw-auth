@@ -96,7 +96,7 @@ const sendPasswordResetEmail = async (email, token) => {
 };
 
 module.exports = {
-  sendVerificationEmail,
+  sendOTPEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
 };
