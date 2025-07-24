@@ -9,6 +9,7 @@ const emailValidation = require("../utils/validation.js");
 const {
   sendOTPEmail,
   sendWelcomeEmail,
+  sendPasswordResetEmail,
 } = require("../services/emailService.js");
 
 class AuthService {
@@ -59,26 +60,22 @@ class AuthService {
     }
   }
 
-  static async verifyEmail(email, otp) {
+  static async verifyEmail(email, code) {
     try {
-      // check if email and otp are provided
-      if (!email || !otp) {
-        throw new Error("Email and OTP are required");
+      // check if email and code are provided
+      if (!email || !code) {
+        throw new Error("Email and code are required");
       }
 
-      console.log(`[AUTH SERVICE] Verifying email: ${email} with OTP: ${otp}`);
+      console.log(
+        `[AUTH SERVICE] Verifying email: ${email} with code: ${code}`
+      );
 
-      // check OTP
-      const optOnDb = await User.verifyEmail(email, otp);
+      // check code (expiration is now checked in the database query)
+      const optOnDb = await User.verifyUser(email, code);
 
       if (!optOnDb) {
-        throw new Error("Invalid OTP or email");
-      }
-
-      // check if OTP is expired
-      const otpExpired = User.isOTPExpired(optOnDb.created_at);
-      if (otpExpired) {
-        throw new Error("OTP has expired");
+        throw new Error("Invalid or expired code");
       }
 
       // update user email_verified status
@@ -90,9 +87,11 @@ class AuthService {
       // send welcome email
       await sendWelcomeEmail(email);
       console.log(`[AUTH SERVICE] Welcome email sent to: ${email}`);
+
+      return { message: "Email verified successfully" };
     } catch (error) {
       console.error("Error verifying email:", error);
-      throw new Error("Email verification failed");
+      throw error;
     }
   }
 
@@ -132,8 +131,8 @@ class AuthService {
     }
   }
 
-  //forget password
-  static async forgetPassword(email) {
+  //forgot password
+  static async forgotPassword(email) {
     try {
       if (!email) {
         throw new Error("Email is required");
@@ -146,10 +145,13 @@ class AuthService {
 
       const token = await User.passwordResetToken(email);
 
-      return { message: "OTP sent to email for verification" };
+      // Send password reset email
+      await sendPasswordResetEmail(email, token);
+
+      return { message: "Password reset link sent to email" };
     } catch (error) {
-      console.error("Error sending OTP for password reset:", error);
-      throw new Error("Sending OTP for password reset failed");
+      console.error("Error sending password reset:", error);
+      throw error;
     }
   }
 
@@ -173,7 +175,7 @@ class AuthService {
       }
 
       await User.updatePassword(email, newPassword);
-      await User.deletePasswordResetToken(email);
+      await User.deletePasswordResetToken(email); // Removed token parameter
 
       return { message: "Password reset successfully" };
     } catch (error) {
@@ -181,4 +183,39 @@ class AuthService {
       throw new Error("Password reset failed");
     }
   }
+
+  // Login
+  static async login(email, password) {
+    try {
+      if (!email || !password) {
+        throw new Error("Email and password are required");
+      }
+
+      const user = await User.findByEmail(email);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      if (!user.email_verified) {
+        throw new Error("Email not verified");
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        throw new Error("Invalid password");
+      }
+
+      // Generate JWT token
+      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
+        expiresIn: "30d",
+      });
+
+      return { token, user: { id: user.id, email: user.email } };
+    } catch (error) {
+      console.error("Error logging in:", error);
+      throw error;
+    }
+  }
 }
+
+module.exports = AuthService;

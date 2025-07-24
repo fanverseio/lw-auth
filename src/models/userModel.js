@@ -48,10 +48,14 @@ class User {
   static async createAndStoreOTP(email) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log(`[OTP GENERATION] Generated OTP for ${email}: ${otp}`);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // First delete any existing OTP for this email
+    await pool.query("DELETE FROM otp_codes WHERE email = $1", [email]);
+
+    // Then insert the new OTP with expiration time
     await pool.query(
-      "INSERT INTO otp_codes (email, code, expires_at) VALUES ($1, $2, $3)",
-      [email, otp, expiresAt]
+      "INSERT INTO otp_codes (email, code, created_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '10 minutes')",
+      [email, otp]
     );
     console.log("[MODEL] OTP inserted into DB for email:", email, "OTP:", otp);
     return otp;
@@ -65,22 +69,21 @@ class User {
     return otp;
   }
   // verify email with OTP
-  static async verifyUser(email, otp) {
+  static async verifyUser(email, code) {
     try {
       const result = await pool.query(
-        "SELECT * FROM otp_codes WHERE email = $1 AND code = $2",
-        [email, otp]
+        "SELECT * FROM otp_codes WHERE email = $1 AND code = $2 AND expires_at > NOW()",
+        [email, code]
       );
 
       if (result.rows.length === 0) {
-        console.log("Invalid OTP or email.");
-        throw new Error("Invalid OTP or email.");
+        console.log("Invalid or expired code for email:", email);
+        throw new Error("Invalid or expired code");
       }
 
       return result.rows[0];
     } catch (error) {
-      console.log("Something gone wrong verifying OTP.");
-
+      console.log("Something gone wrong verifying code.");
       throw error;
     }
   }
@@ -101,21 +104,27 @@ class User {
 
   // delete OTP from DB
   static async deleteOTP(email) {
-    await pool.query("UPDATE users SET otp = NULL WHERE email = $1", [email]);
+    await pool.query("DELETE FROM otp_codes WHERE email = $1", [email]);
   }
 
   // password reset token
   static async passwordResetToken(email) {
     const token = crypto.randomBytes(32).toString("hex");
-    const expiration = new Date(Date.now() + 3600000);
+    const expiration = new Date(Date.now() + 3600000); // 1 hour from now
 
     console.log(
       `[USER MODEL] Password reset token generated for ${email}: ${token}`
     );
 
+    // Delete any existing tokens for this email
+    await pool.query("DELETE FROM password_reset_tokens WHERE email = $1", [
+      email,
+    ]);
+
+    // Insert new token
     await pool.query(
-      "UPDATE users SET reset_token = $1, reset_token_expiration = $2 WHERE email = $3",
-      [token, expiration, email]
+      "INSERT INTO password_reset_tokens (email, token, expires_at) VALUES ($1, $2, $3)",
+      [email, token, expiration]
     );
 
     return token;
@@ -131,12 +140,26 @@ class User {
     console.log(`[PASSWORD RESET] Password updated for ${email}`);
   }
 
-  static async deletePasswordResetToken(email, token) {
-    await pool.query(
-      "DELETE FROM password_reset_tokens WHERE email = $1 AND token = $2",
+  static async deletePasswordResetToken(email) {
+    await pool.query("DELETE FROM password_reset_tokens WHERE email = $1", [
+      email,
+    ]);
+    console.log(`[PASSWORD RESET] Token consumed for ${email}`);
+  }
+
+  // Add missing methods
+  static async recentOTPCount(email) {
+    // For now, return 0 to allow OTP sending
+    // You can implement actual logic to count daily OTP requests later
+    return 0;
+  }
+
+  static async validatePasswordResetToken(email, token) {
+    const result = await pool.query(
+      "SELECT * FROM password_reset_tokens WHERE email = $1 AND token = $2 AND expires_at > NOW()",
       [email, token]
     );
-    console.log(`[PASSWORD RESET] Token consumed for ${email}`);
+    return result.rows[0];
   }
 }
 

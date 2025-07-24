@@ -10,9 +10,10 @@ const registerUser = async (req, res) => {
     // call AuthService to register user
     const result = await AuthService.registerUser(email, password);
 
-    if (result.user) {
-      await UserProfile.createProfile(result.user.id);
-    }
+    // Temporarily commented out until user_profiles table structure is fixed
+    // if (result.user) {
+    //   await UserProfile.createProfile(result.user.id);
+    // }
 
     res.status(201).json(result);
   } catch (error) {
@@ -23,15 +24,21 @@ const registerUser = async (req, res) => {
 
 const verifyUser = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, code } = req.body;
 
-    console.log("Verifying user with email:", email, "and OTP:", otp);
+    // Add debugging to see what we received
+    console.log("Request body:", req.body);
+    console.log("Extracted email:", email, "type:", typeof email);
+    console.log("Extracted code:", code, "type:", typeof code);
 
-    const result = await AuthService.verifyEmail(email, otp);
+    const result = await AuthService.verifyEmail(email, code);
 
     res.status(200).json({ result, message: "Email verified successfully" });
   } catch (error) {
     console.log("Error verifying user:", error);
+    res
+      .status(400)
+      .json({ error: error.message || "Email verification failed" }); // <-- Add this line
   }
 };
 
@@ -52,7 +59,7 @@ const resendOTP = async (req, res) => {
   }
 };
 
-const forgetPassword = async (req, res) => {
+const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -60,28 +67,28 @@ const forgetPassword = async (req, res) => {
       return res.status(400).json({ error: "Email is required" });
     }
 
-    const result = await AuthService.forgetPassword(email);
+    const result = await AuthService.forgotPassword(email);
 
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error in forget password:", error);
+    console.error("Error in forgot password:", error);
     res
       .status(500)
-      .json({ error: "Failed to process forget password request" });
+      .json({ error: "Failed to process forgot password request" });
   }
 };
 
 const resetPassword = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
+    const { email, token, newPassword } = req.body;
 
-    if (!email || !otp || !newPassword) {
+    if (!email || !token || !newPassword) {
       return res
         .status(400)
-        .json({ error: "Email, OTP, and new password are required" });
+        .json({ error: "Email, token, and new password are required" });
     }
 
-    const result = await AuthService.resetPassword(email, otp, newPassword);
+    const result = await AuthService.resetPassword(email, token, newPassword);
 
     res.status(200).json(result);
   } catch (error) {
@@ -90,10 +97,24 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const result = await AuthService.login(email, password);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error logging in:", error);
+    res.status(401).json({ error: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   verifyUser,
   resendOTP,
-  forgetPassword,
+  forgotPassword,
   resetPassword,
+  loginUser,
 };

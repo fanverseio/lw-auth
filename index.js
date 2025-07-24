@@ -8,7 +8,7 @@ app.use(express.json());
 
 const authRoutes = require("./src/routes/authRoutes.js");
 
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 
 const session = require("express-session");
 
