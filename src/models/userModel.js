@@ -161,6 +161,33 @@ class User {
     );
     return result.rows[0];
   }
+
+  static async findOrCreateGoogleUser(profile) {
+    const email = profile.emails[0].value;
+    let user;
+
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
+
+    if (result.rows.length > 0) {
+      user = result.rows[0];
+      console.log("User found:", user);
+    } else {
+      // Create a new user if not found
+
+      // Google user all used same password
+      const passwordOAuth = await bcrypt.hash("GoogleOAuth", 10);
+
+      const newUserResult = await pool.query(
+        "INSERT INTO users (email, password, email_verified) VALUES ($1, $2, $3) RETURNING id, email",
+        [email, passwordOAuth, true]
+      );
+      user = newUserResult.rows[0];
+      console.log("New user created:", user);
+    }
+    return user;
+  }
 }
 
 module.exports = User;

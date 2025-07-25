@@ -11,6 +11,10 @@ const authRoutes = require("./src/routes/authRoutes.js");
 app.use("/api/auth", authRoutes);
 
 const session = require("express-session");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const User = require("./src/models/userModel");
+const jwt = require("jsonwebtoken");
 
 app.get("/", (req, res) => {
   res.send("Welcome to the Learnerweave Auth API");
@@ -30,6 +34,53 @@ app.get("/db-test", async (req, res) => {
       client.release();
     }
   }
+});
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false },
+  })
+);
+
+//Google OAuth setup
+app.use(passport.initialize());
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        console.log("Google profile received:", profile.emails[0].value);
+        const user = await User.findOrCreateGoogleUser(profile);
+        console.log("User found/created:", user);
+        const token = jwt.sign(
+          { id: user.id, email: user.email },
+          process.env.JWT_SECRET,
+          { expiresIn: "30d" }
+        );
+        console.log("JWT generated successfully");
+        user.token = token;
+        return done(null, user);
+      } catch (err) {
+        console.error("Google OAuth error:", err);
+        return done(err, null);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+passport.deserializeUser((user, done) => {
+  done(null, user);
 });
 
 app.listen(PORT, async () => {
