@@ -20,6 +20,7 @@
   "homepage": "https://github.com/fanverseio/lw-auth#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
