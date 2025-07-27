@@ -40,8 +40,7 @@ class AuthService {
         if (userVerified) {
           throw new Error("Email already registered and verified");
         } else {
-          await User.sendOTP(email);
-          return { message: "OTP sent to email for verification" };
+          throw new Error("Email already registered but not yet verified");
         }
       }
 
@@ -128,7 +127,7 @@ class AuthService {
       return { message: "OTP resent successfully" };
     } catch (error) {
       console.error("Error resending OTP:", error);
-      throw new Error("Resending OTP failed");
+      throw error;
     }
   }
 

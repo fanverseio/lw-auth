@@ -149,9 +149,14 @@ class User {
 
   // Add missing methods
   static async recentOTPCount(email) {
-    // For now, return 0 to allow OTP sending
-    // You can implement actual logic to count daily OTP requests later
-    return 0;
+    const result = await pool.query(
+      `SELECT COUNT(*) as count 
+       FROM otp_codes 
+       WHERE email = $1 
+       AND created_at > NOW() - INTERVAL '24 hours'`,
+      [email]
+    );
+    return parseInt(result.rows[0].count);
   }
 
   static async validatePasswordResetToken(email, token) {

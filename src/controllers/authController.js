@@ -55,7 +55,7 @@ const resendOTP = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error("Error resending OTP:", error);
-    res.status(500).json({ error: "Failed to resend OTP" });
+    res.status(400).json({ error: error.message });
   }
 };
 
@@ -72,9 +72,7 @@ const forgotPassword = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error("Error in forgot password:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to process forgot password request" });
+    res.status(400).json({ error: error.message });
   }
 };
 
