@@ -14,8 +14,10 @@ app.use(
 );
 
 const authRoutes = require("./src/routes/authRoutes.js");
+const pathRoutes = require("./src/routes/pathRoutes.js");
 
 app.use("/api/auth", authRoutes);
+app.use("/api/paths", pathRoutes);
 
 const session = require("express-session");
 const passport = require("passport");
