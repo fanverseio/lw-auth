@@ -2,6 +2,8 @@ const express = require("express");
 const pool = require("./src/config/db.js");
 const cors = require("cors");
 
+const pathsDb = require("./src/config/pathsDb.js");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -42,6 +44,26 @@ app.get("/db-test", async (req, res) => {
     if (client) {
       client.release();
     }
+  }
+});
+
+// Paths db from Supabase
+app.get("/supabase-test", async (req, res) => {
+  try {
+    const result =
+      await pathsDb`SELECT NOW() as current_time, version() as db_version`;
+    res.json({
+      success: true,
+      message: "Supabase connection successful",
+      data: result[0],
+    });
+  } catch (error) {
+    console.error("Supabase connection error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Supabase connection failed",
+      error: error.message,
+    });
   }
 });
 

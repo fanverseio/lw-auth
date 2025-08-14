@@ -26,7 +26,7 @@ const verifyUser = async (req, res) => {
   try {
     const { email, code } = req.body;
 
-    // Add debugging to check email and code
+    // Add debugging to see what we received
     console.log("Request body:", req.body);
     console.log("Extracted email:", email, "type:", typeof email);
     console.log("Extracted code:", code, "type:", typeof code);
@@ -38,7 +38,7 @@ const verifyUser = async (req, res) => {
     console.log("Error verifying user:", error);
     res
       .status(400)
-      .json({ error: error.message || "Email verification failed" });
+      .json({ error: error.message || "Email verification failed" }); // <-- Add this line
   }
 };
 
