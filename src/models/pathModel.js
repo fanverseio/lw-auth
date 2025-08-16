@@ -196,6 +196,96 @@ class PathModel {
       throw error;
     }
   }
+
+  // paths for public board
+  static async getPublicPaths(limit = 20, offset = 0) {
+    try {
+      const result = await pathsDb`
+        SELECT * 
+        FROM paths 
+        WHERE is_public = true
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      return result;
+    } catch (error) {
+      console.error("Error fetching public paths:", error);
+      throw error;
+    }
+  }
+
+  static async getPublicPathById(pathId) {
+    try {
+      const result = await pathsDb`
+        SELECT * FROM paths 
+        WHERE id = ${pathId}
+        AND is_public = true
+      `;
+      return result[0] || null;
+    } catch (error) {
+      console.error("Error fetching public path by ID:", error);
+      throw error;
+    }
+  }
+
+  static async copyPath(originalId, newUserId, newTitle) {
+    try {
+      const result = await pathsDb`
+      INSERT INTO paths (
+        user_id, 
+        title, 
+        description, 
+        difficulty, 
+        "estimatedHours", 
+        is_public, 
+        created_by, 
+        copied_from,
+        copy_count,
+        created_at, 
+        updated_at
+      )
+      SELECT 
+        ${newUserId}, 
+        ${newTitle}, 
+        description, 
+        difficulty, 
+        "estimatedHours", 
+        false, 
+        ${newUserId}, 
+        ${originalId}, 
+        0,
+        NOW(), 
+        NOW()
+      FROM paths 
+      WHERE id = ${originalId}
+      RETURNING *
+    `;
+
+      await pathsDb`
+    UPDATE paths 
+    SET copy_count = copy_count + 1 
+    WHERE id = ${originalId}`;
+
+      return result[0];
+    } catch (error) {
+      console.error("Error copying path:", error);
+      throw error;
+    }
+  }
+
+  static async updatePathVisibility(pathId, userId, isPublic) {
+    try {
+      const result = await pathsDb`
+        UPDATE paths 
+        SET is_public = ${isPublic}
+        WHERE id = ${pathId} AND user_id = ${userId}
+        RETURNING *
+      `;
+      return result[0];
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = PathModel;

@@ -96,6 +96,23 @@ const getPathData = async (req, res) => {
   }
 };
 
+const togglePathVisibility = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isPublic } = req.body;
+    const userId = req.user.id;
+
+    const updatedPath = await PathModel.updatePathVisibility(
+      id,
+      userId,
+      isPublic
+    );
+    res.status(200).json({ success: true, path: updatedPath });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating path visibility" });
+  }
+};
+
 const updatePathData = async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,7 +124,54 @@ const updatePathData = async (req, res) => {
     res.status(500).json({ message: "Error updating path data" });
   }
 };
+const getPublicPaths = async (req, res) => {
+  try {
+    const { limit = 20, offset = 0 } = req.query;
+    const paths = await PathModel.getPublicPaths(
+      parseInt(limit),
+      parseInt(offset)
+    );
+    res.json({ success: true, paths });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching public paths" });
+  }
+};
 
+const copyPublicPath = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
+    const userId = req.user.id;
+
+    // copy details debugging
+    console.log("Path id:", id);
+    console.log("New title:", title);
+    console.log("User id:", userId);
+    console.log("Request body:", req.body);
+    console.log("Request user:", req.user);
+
+    const copiedPath = await PathModel.copyPath(id, userId, title);
+    console.log("Copy successful:", copiedPath);
+    res.status(201).json({ success: true, path: copiedPath });
+  } catch (error) {
+    res.status(500).json({ message: "Error copying path" });
+  }
+};
+
+const getPublicPathById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const path = await PathModel.getPublicPathById(id);
+
+    if (!path) {
+      return res.status(404).json({ message: "Public path not found" });
+    }
+
+    res.json({ success: true, path });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching public path" });
+  }
+};
 module.exports = {
   getAllPaths,
   getPathById,
@@ -116,4 +180,8 @@ module.exports = {
   deletePath,
   getPathData,
   updatePathData,
+  togglePathVisibility,
+  getPublicPaths,
+  copyPublicPath,
+  getPublicPathById,
 };
