@@ -31,6 +31,15 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Learnerweave Auth API");
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    port: PORT,
+    env: process.env.NODE_ENV,
+    message: "Server is running",
+  });
+});
+
 app.get("/db-test", async (req, res) => {
   let client;
   try {
