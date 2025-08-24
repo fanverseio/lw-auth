@@ -30,11 +30,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # Change this line in your workflow:
-            cd /home/ec2-user/lw-auth
-            # To:
-            cd /home/ubuntu/lw-auth
+          script: cd /home/ubuntu/lw-auth
             git pull origin main
             npm install --production
             pm2 restart lw-auth
