@@ -98,7 +98,7 @@ class PathModel {
         pathDetails;
 
       const result = await pathsDb`
-        INSERT INTO paths (user_id, title, description, difficulty, estimated_hours, created_at, updated_at)
+        INSERT INTO paths (user_id, title, description, difficulty, "estimatedHours", created_at, updated_at)
         VALUES (${userId}, ${title}, ${description}, ${difficulty}, ${estimatedHours}, NOW(), NOW())
         RETURNING *
       `;
@@ -119,7 +119,7 @@ class PathModel {
         SET title = ${title}, 
             description = ${description}, 
             difficulty = ${difficulty}, 
-            estimated_hours = ${estimatedHours}, 
+            "estimatedHours" = ${estimatedHours}, 
             updated_at = NOW()
         WHERE id = ${id}
         RETURNING *
@@ -198,18 +198,32 @@ class PathModel {
   }
 
   // paths for public board
-  static async getPublicPaths(limit = 20, offset = 0) {
+  static async getPublicPaths() {
     try {
       const result = await pathsDb`
         SELECT * 
         FROM paths 
         WHERE is_public = true
         ORDER BY created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
       `;
       return result;
     } catch (error) {
       console.error("Error fetching public paths:", error);
+      throw error;
+    }
+  }
+
+  // Add this new method
+  static async getPublicPathsCount() {
+    try {
+      const result = await pathsDb`
+        SELECT COUNT(*) as total
+        FROM paths 
+        WHERE is_public = true
+      `;
+      return parseInt(result[0].total);
+    } catch (error) {
+      console.error("Error counting public paths:", error);
       throw error;
     }
   }

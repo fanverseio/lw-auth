@@ -126,11 +126,7 @@ const updatePathData = async (req, res) => {
 };
 const getPublicPaths = async (req, res) => {
   try {
-    const { limit = 20, offset = 0 } = req.query;
-    const paths = await PathModel.getPublicPaths(
-      parseInt(limit),
-      parseInt(offset)
-    );
+    const paths = await PathModel.getPublicPaths();
     res.json({ success: true, paths });
   } catch (error) {
     res.status(500).json({ message: "Error fetching public paths" });
