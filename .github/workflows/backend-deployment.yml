@@ -28,9 +28,12 @@ jobs:
         uses: appleboy/ssh-action@v0.1.5
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Change this line in your workflow:
+            cd /home/ec2-user/lw-auth
+            # To:
             cd /home/ubuntu/lw-auth
             git pull origin main
             npm install --production
