@@ -31,7 +31,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ec2-user/lw-auth
+            cd /home/ubuntu/lw-auth
             git pull origin main
             npm install --production
             pm2 restart lw-auth
