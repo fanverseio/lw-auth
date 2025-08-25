@@ -72,8 +72,8 @@ const sendWelcomeEmail = async (email) => {
 
 const sendPasswordResetEmail = async (email, token) => {
   console.log(`[EMAIL SERVICE] Sending password reset email to: ${email}`);
-  // Use frontend URL instead of backend URL
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  const frontendUrl = process.env.FRONTEND_URL || "https://learnerweave.space";
   const resetLink = `${frontendUrl}/reset-password?email=${encodeURIComponent(
     email
   )}&token=${token}`;

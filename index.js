@@ -11,8 +11,7 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      process.env.FRONTEND_URL || "http://localhost:5173",
-      "https://learnerweave.space",
+      process.env.FRONTEND_URL || "https://learnerweave.space",
       "https://www.learnerweave.space",
       "lw-frontend.vercel.app",
     ],

@@ -44,12 +44,14 @@ router.get(
   passport.authenticate("google", { session: false }),
   (req, res) => {
     if (req.user && req.user.token) {
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173"; // react frontend
+      const frontendUrl =
+        process.env.FRONTEND_URL || "https://learnerweave.space";
       res.redirect(
         `${frontendUrl}/auth/google/callback?token=${req.user.token}`
       );
     } else {
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+      const frontendUrl =
+        process.env.FRONTEND_URL || "https://learnerweave.space";
       res.redirect(
         `${frontendUrl}/auth/google/callback?error=Authentication failed`
       );
