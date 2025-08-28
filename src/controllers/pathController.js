@@ -2,7 +2,8 @@ const PathModel = require("../models/pathModel");
 
 const getAllPaths = async (req, res) => {
   try {
-    const paths = await PathModel.getAllPaths();
+    const userId = req.user.id;
+    const paths = await PathModel.getUserPaths(userId);
     res.status(200).json(paths);
   } catch (error) {
     res

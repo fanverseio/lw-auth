@@ -213,6 +213,21 @@ class PathModel {
     }
   }
 
+  static async getUserPaths(userId) {
+    try {
+      const result = await pathsDb`
+        SELECT * 
+        FROM paths 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC
+      `;
+      return result;
+    } catch (error) {
+      console.error("Error fetching user paths:", error);
+      throw error;
+    }
+  }
+
   // Add this new method
   static async getPublicPathsCount() {
     try {
